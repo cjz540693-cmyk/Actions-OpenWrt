@@ -1,4 +1,4 @@
-name: OpenWrt Stable Build
+name: OpenWrt Build FINAL
 
 on:
   workflow_dispatch:
@@ -9,7 +9,6 @@ permissions:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: master
-  CONFIG_FILE: seed.config
 
 jobs:
   build:
@@ -19,7 +18,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Install dependencies
+    - name: Install deps
       run: |
         sudo apt update
         sudo apt install -y build-essential clang flex bison g++ gawk \
@@ -30,7 +29,6 @@ jobs:
       run: |
         git clone $REPO_URL -b $REPO_BRANCH openwrt
 
-    # ⭐ feeds（必须）
     - name: Update feeds
       run: |
         cd openwrt
@@ -41,53 +39,24 @@ jobs:
         cd openwrt
         ./scripts/feeds install -a
 
-    # ⭐ 核心修复版（重点）
-    - name: Load config + LOCK
+    - name: Load config
       run: |
-        mv $CONFIG_FILE openwrt/.config
+        cp .config openwrt/.config
         cd openwrt
-
         make defconfig
 
-        # ✅ 正确调用（最终方案）
-        ./scripts/config/conf --enable CONFIG_PACKAGE_luci
-        ./scripts/config/conf --enable CONFIG_PACKAGE_luci-base
-        ./scripts/config/conf --enable CONFIG_PACKAGE_luci-ssl-openssl
-        ./scripts/config/conf --enable CONFIG_PACKAGE_luci-compat
-        ./scripts/config/conf --enable CONFIG_PACKAGE_luci-app-opkg
-
-        ./scripts/config/conf --enable CONFIG_PACKAGE_luci-theme-argon
-
-        ./scripts/config/conf --enable CONFIG_PACKAGE_tailscale
-        ./scripts/config/conf --enable CONFIG_PACKAGE_luci-app-tailscale
-
-        ./scripts/config/conf --enable CONFIG_PACKAGE_kmod-mt7915e
-        ./scripts/config/conf --enable CONFIG_PACKAGE_wpad-openssl
-
-        ./scripts/config/conf --enable CONFIG_PACKAGE_firewall4
-        ./scripts/config/conf --enable CONFIG_PACKAGE_nftables
-
-        ./scripts/config/conf --enable CONFIG_PACKAGE_htop
-        ./scripts/config/conf --enable CONFIG_PACKAGE_nano
-        ./scripts/config/conf --enable CONFIG_PACKAGE_bash
-
-        ./scripts/config/conf --enable CONFIG_PACKAGE_irqbalance
-
-        # ⭐ 再补依赖
-        make defconfig
-
-    - name: Download packages
+    - name: Download
       run: |
         cd openwrt
         make download -j8
 
-    - name: Compile firmware
+    - name: Compile
       run: |
         cd openwrt
         make -j$(nproc)
 
-    - name: Upload firmware
+    - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: X60-Stable
+        name: X60-FINAL
         path: openwrt/bin/targets/

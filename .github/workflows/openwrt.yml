@@ -1,4 +1,4 @@
-name: OpenWrt Build (Stable)
+name: OpenWrt Stable Build
 
 on:
   workflow_dispatch:
@@ -31,7 +31,7 @@ jobs:
       run: |
         git clone $REPO_URL -b $REPO_BRANCH openwrt
 
-    # ⭐ 必须：feeds（你之前缺的就是这个）
+    # ⭐ 必须：feeds
     - name: Update feeds
       run: |
         cd openwrt
@@ -42,45 +42,38 @@ jobs:
         cd openwrt
         ./scripts/feeds install -a
 
-    # ⭐ 核心：锁定配置
-    - name: Load config + LOCK
+    # ⭐ 核心（已修复 scripts/config 问题）
+    - name: Load config + LOCK (FIXED)
       run: |
         mv $CONFIG_FILE openwrt/.config
         cd openwrt
 
         make defconfig
 
-        # ===== LuCI =====
-        ./scripts/config --enable CONFIG_PACKAGE_luci
-        ./scripts/config --enable CONFIG_PACKAGE_luci-base
-        ./scripts/config --enable CONFIG_PACKAGE_luci-ssl-openssl
-        ./scripts/config --enable CONFIG_PACKAGE_luci-compat
-        ./scripts/config --enable CONFIG_PACKAGE_luci-app-opkg
+        # 👉 使用 scripts/config（无 ./）
+        scripts/config --enable CONFIG_PACKAGE_luci
+        scripts/config --enable CONFIG_PACKAGE_luci-base
+        scripts/config --enable CONFIG_PACKAGE_luci-ssl-openssl
+        scripts/config --enable CONFIG_PACKAGE_luci-compat
+        scripts/config --enable CONFIG_PACKAGE_luci-app-opkg
 
-        # ===== 主题 =====
-        ./scripts/config --enable CONFIG_PACKAGE_luci-theme-argon
+        scripts/config --enable CONFIG_PACKAGE_luci-theme-argon
 
-        # ===== Tailscale =====
-        ./scripts/config --enable CONFIG_PACKAGE_tailscale
-        ./scripts/config --enable CONFIG_PACKAGE_luci-app-tailscale
+        scripts/config --enable CONFIG_PACKAGE_tailscale
+        scripts/config --enable CONFIG_PACKAGE_luci-app-tailscale
 
-        # ===== WiFi =====
-        ./scripts/config --enable CONFIG_PACKAGE_kmod-mt7915e
-        ./scripts/config --enable CONFIG_PACKAGE_wpad-openssl
+        scripts/config --enable CONFIG_PACKAGE_kmod-mt7915e
+        scripts/config --enable CONFIG_PACKAGE_wpad-openssl
 
-        # ===== 网络 =====
-        ./scripts/config --enable CONFIG_PACKAGE_firewall4
-        ./scripts/config --enable CONFIG_PACKAGE_nftables
+        scripts/config --enable CONFIG_PACKAGE_firewall4
+        scripts/config --enable CONFIG_PACKAGE_nftables
 
-        # ===== 工具 =====
-        ./scripts/config --enable CONFIG_PACKAGE_htop
-        ./scripts/config --enable CONFIG_PACKAGE_nano
-        ./scripts/config --enable CONFIG_PACKAGE_bash
+        scripts/config --enable CONFIG_PACKAGE_htop
+        scripts/config --enable CONFIG_PACKAGE_nano
+        scripts/config --enable CONFIG_PACKAGE_bash
 
-        # ===== 性能 =====
-        ./scripts/config --enable CONFIG_PACKAGE_irqbalance
+        scripts/config --enable CONFIG_PACKAGE_irqbalance
 
-        # 再补一次依赖（关键）
         make defconfig
 
     - name: Download packages

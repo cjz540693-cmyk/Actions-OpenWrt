@@ -10,7 +10,6 @@ env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: master
   CONFIG_FILE: seed.config
-  TZ: Asia/Tokyo
 
 jobs:
   build:
@@ -31,7 +30,7 @@ jobs:
       run: |
         git clone $REPO_URL -b $REPO_BRANCH openwrt
 
-    # ✅ feeds（必须）
+    # ⭐ feeds（必须）
     - name: Update feeds
       run: |
         cd openwrt
@@ -42,7 +41,7 @@ jobs:
         cd openwrt
         ./scripts/feeds install -a
 
-    # ✅ 修复后的配置（不再报错）
+    # ⭐ 核心修复版（重点）
     - name: Load config + LOCK
       run: |
         mv $CONFIG_FILE openwrt/.config
@@ -50,37 +49,31 @@ jobs:
 
         make defconfig
 
-        # ===== LuCI =====
-        scripts/config --enable CONFIG_PACKAGE_luci
-        scripts/config --enable CONFIG_PACKAGE_luci-base
-        scripts/config --enable CONFIG_PACKAGE_luci-ssl-openssl
-        scripts/config --enable CONFIG_PACKAGE_luci-compat
-        scripts/config --enable CONFIG_PACKAGE_luci-app-opkg
+        # ✅ 正确调用（最终方案）
+        ./scripts/config/conf --enable CONFIG_PACKAGE_luci
+        ./scripts/config/conf --enable CONFIG_PACKAGE_luci-base
+        ./scripts/config/conf --enable CONFIG_PACKAGE_luci-ssl-openssl
+        ./scripts/config/conf --enable CONFIG_PACKAGE_luci-compat
+        ./scripts/config/conf --enable CONFIG_PACKAGE_luci-app-opkg
 
-        # ===== 主题 =====
-        scripts/config --enable CONFIG_PACKAGE_luci-theme-argon
+        ./scripts/config/conf --enable CONFIG_PACKAGE_luci-theme-argon
 
-        # ===== Tailscale =====
-        scripts/config --enable CONFIG_PACKAGE_tailscale
-        scripts/config --enable CONFIG_PACKAGE_luci-app-tailscale
+        ./scripts/config/conf --enable CONFIG_PACKAGE_tailscale
+        ./scripts/config/conf --enable CONFIG_PACKAGE_luci-app-tailscale
 
-        # ===== WiFi =====
-        scripts/config --enable CONFIG_PACKAGE_kmod-mt7915e
-        scripts/config --enable CONFIG_PACKAGE_wpad-openssl
+        ./scripts/config/conf --enable CONFIG_PACKAGE_kmod-mt7915e
+        ./scripts/config/conf --enable CONFIG_PACKAGE_wpad-openssl
 
-        # ===== 网络 =====
-        scripts/config --enable CONFIG_PACKAGE_firewall4
-        scripts/config --enable CONFIG_PACKAGE_nftables
+        ./scripts/config/conf --enable CONFIG_PACKAGE_firewall4
+        ./scripts/config/conf --enable CONFIG_PACKAGE_nftables
 
-        # ===== 工具 =====
-        scripts/config --enable CONFIG_PACKAGE_htop
-        scripts/config --enable CONFIG_PACKAGE_nano
-        scripts/config --enable CONFIG_PACKAGE_bash
+        ./scripts/config/conf --enable CONFIG_PACKAGE_htop
+        ./scripts/config/conf --enable CONFIG_PACKAGE_nano
+        ./scripts/config/conf --enable CONFIG_PACKAGE_bash
 
-        # ===== 性能 =====
-        scripts/config --enable CONFIG_PACKAGE_irqbalance
+        ./scripts/config/conf --enable CONFIG_PACKAGE_irqbalance
 
-        # 再补依赖（关键）
+        # ⭐ 再补依赖
         make defconfig
 
     - name: Download packages

@@ -1,43 +1,29 @@
 #!/bin/bash
 
-cd openwrt
+# ===== 默认IP（简单稳定写法）=====
+sed -i 's/192.168.1.1/192.168.110.1/g' package/base-files/files/bin/config_generate
 
-echo "===== 写入核心插件（绝不会丢） ====="
 
-cat >> .config <<EOF
+# ===== 默认主题 + 中文 =====
+mkdir -p package/base-files/files/etc/uci-defaults
 
-# LuCI
-CONFIG_PACKAGE_luci=y
-CONFIG_PACKAGE_luci-ssl-openssl=y
-CONFIG_PACKAGE_luci-compat=y
-
-# 中文
-CONFIG_PACKAGE_luci-i18n-base-zh-cn=y
-
-# 主题
-CONFIG_PACKAGE_luci-theme-argon=y
-
-# 网络工具
-CONFIG_PACKAGE_curl=y
-CONFIG_PACKAGE_wget=y
-
-# 常用工具
-CONFIG_PACKAGE_htop=y
-CONFIG_PACKAGE_nano=y
-CONFIG_PACKAGE_bash=y
-
-# 性能
-CONFIG_PACKAGE_irqbalance=y
-
-# Tailscale（如果源码有才会生效）
-CONFIG_PACKAGE_tailscale=y
-CONFIG_PACKAGE_luci-app-tailscale=y
-
+cat > package/base-files/files/etc/uci-defaults/30-luci << 'EOF'
+#!/bin/sh
+uci set luci.main.lang='zh_cn'
+uci set luci.main.mediaurlbase='/luci-static/argon'
+uci commit luci
+exit 0
 EOF
 
-echo "===== 自动补依赖（关键步骤） ====="
-make defconfig
 
-echo "===== 检查插件是否成功写入 ====="
-grep luci .config || echo "❌ LuCI没写进去"
-grep tailscale .config || echo "⚠ tailscale可能不存在"
+# ===== 开机启动 Tailscale =====
+cat > package/base-files/files/etc/uci-defaults/90-tailscale << 'EOF'
+#!/bin/sh
+/etc/init.d/tailscale enable
+/etc/init.d/tailscale start
+exit 0
+EOF
+
+
+# ===== 给执行权限 =====
+chmod +x package/base-files/files/etc/uci-defaults/*

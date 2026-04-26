@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  REPO_URL: https://github.com/immortalwrt/immortalwrt
+  REPO_URL: https://github.com/Yuzhii0718/immortalwrt-mt798x-6.6-padavanonly.git
   REPO_BRANCH: master
 
 jobs:

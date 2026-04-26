@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 env:
-  REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6
+  REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: master
 
 jobs:

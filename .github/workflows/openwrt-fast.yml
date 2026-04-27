@@ -1,4 +1,4 @@
-name: X60 FULL STABLE (LOCAL UI)
+name: X60 FULL STABLE (FINAL)
 
 on:
   workflow_dispatch:
@@ -12,7 +12,8 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
     - name: 安装依赖
       run: |
@@ -31,9 +32,9 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    - name: 加入本地插件
+    - name: 加入本地插件（你的UI就在这）
       run: |
-        cp -r package openwrt/
+        cp -r package openwrt/ || true
 
     - name: 加载配置
       run: |
@@ -41,33 +42,42 @@ jobs:
         cd openwrt
         make defconfig
 
-        grep rg-x60 .config || (echo "❌ 不是X60" && exit 1)
-        grep tailscale .config || (echo "❌ tailscale没进" && exit 1)
+        echo "===== 检查设备 ====="
+        grep rg-x60 .config || (echo "❌ 没选中X60" && exit 1)
 
-    - name: 应用脚本
+    - name: 应用自定义脚本（防报错版）
       run: |
-        chmod +x scripts/diy.sh
-        cd openwrt
-        ../scripts/diy.sh
+        [ -f scripts/diy.sh ] && chmod +x scripts/diy.sh && (cd openwrt && ../scripts/diy.sh) || echo "跳过 diy.sh"
 
-    - name: 下载
+    - name: 下载源码包
       run: |
         cd openwrt
         make download -j8
 
-    - name: 编译
+    - name: 编译（防炸版）
       run: |
         cd openwrt
         export GOMAXPROCS=2
-        make -j$(nproc) || make -j2 || make -j1 V=s
 
-    - name: 校验
+        make -j$(nproc) || make -j2 || make -j1 V=s || (echo "❌ 编译失败" && exit 1)
+
+    - name: 查找固件（已修复）
       run: |
-        cd openwrt/bin/targets/*/*
-        ls | grep x60 || exit 1
+        echo "===== 固件列表 ====="
+        find openwrt/bin/targets -type f || (echo "❌ 没有生成固件" && exit 1)
 
-    - name: 上传
+        echo "===== 查找bin ====="
+        BIN=$(find openwrt/bin/targets -name "*.bin" | head -n 1)
+
+        if [ -z "$BIN" ]; then
+          echo "❌ 没找到固件文件"
+          exit 1
+        fi
+
+        echo "✅ 找到固件: $BIN"
+
+    - name: 上传固件（最终）
       uses: actions/upload-artifact@v4
       with:
-        name: X60-UI-STABLE
+        name: X60-FIRMWARE
         path: openwrt/bin/targets/

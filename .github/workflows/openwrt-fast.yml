@@ -1,4 +1,4 @@
-name: X60 FULL STABLE (FINAL)
+name: X60 FINAL BUILD (FULL)
 
 on:
   workflow_dispatch:
@@ -26,58 +26,124 @@ jobs:
       run: |
         git clone $REPO_URL -b $REPO_BRANCH openwrt
 
-    - name: feeds
+    - name: 更新 feeds
       run: |
         cd openwrt
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    - name: 加入本地插件（你的UI就在这）
+    - name: 写入完整配置（锁死X60 + 插件）
       run: |
-        cp -r package openwrt/ || true
+        cat > openwrt/.config <<'EOF'
+CONFIG_TARGET_mediatek=y
+CONFIG_TARGET_mediatek_filogic=y
+CONFIG_TARGET_mediatek_filogic_DEVICE_ruijie_rg-x60=y
+CONFIG_TARGET_PROFILE="ruijie_rg-x60"
 
-    - name: 加载配置
+CONFIG_DEVEL=y
+
+# LuCI
+CONFIG_PACKAGE_luci=y
+CONFIG_PACKAGE_luci-ssl-openssl=y
+CONFIG_PACKAGE_luci-compat=y
+
+# 中文
+CONFIG_PACKAGE_luci-i18n-base-zh-cn=y
+
+# 主题
+CONFIG_PACKAGE_luci-theme-bootstrap=y
+
+# ===== Tailscale =====
+CONFIG_PACKAGE_tailscale=y
+CONFIG_PACKAGE_luci-app-tailscale=y
+
+# ===== 常用插件 =====
+CONFIG_PACKAGE_luci-app-firewall=y
+CONFIG_PACKAGE_luci-app-opkg=y
+CONFIG_PACKAGE_luci-app-wol=y
+CONFIG_PACKAGE_luci-app-upnp=y
+CONFIG_PACKAGE_luci-app-nlbwmon=y
+
+# ===== 工具 =====
+CONFIG_PACKAGE_htop=y
+CONFIG_PACKAGE_nano=y
+CONFIG_PACKAGE_bash=y
+CONFIG_PACKAGE_curl=y
+CONFIG_PACKAGE_wget=y
+
+# ===== USB =====
+CONFIG_PACKAGE_kmod-usb-core=y
+CONFIG_PACKAGE_kmod-usb3=y
+CONFIG_PACKAGE_kmod-usb-storage=y
+
+# ===== 文件系统 =====
+CONFIG_PACKAGE_kmod-fs-ext4=y
+CONFIG_PACKAGE_e2fsprogs=y
+
+# ===== WiFi =====
+CONFIG_PACKAGE_kmod-mt76=y
+CONFIG_PACKAGE_wpad-openssl=y
+
+# ===== 防火墙 =====
+CONFIG_PACKAGE_firewall4=y
+CONFIG_PACKAGE_nftables=y
+
+# ===== 性能 =====
+CONFIG_PACKAGE_irqbalance=y
+EOF
+
+    - name: 应用配置
       run: |
-        cp config/x60.config openwrt/.config
         cd openwrt
         make defconfig
 
-        echo "===== 检查设备 ====="
-        grep rg-x60 .config || (echo "❌ 没选中X60" && exit 1)
+        echo "===== 当前设备 ====="
+        grep CONFIG_TARGET .config
 
-    - name: 应用自定义脚本（防报错版）
+        grep rg-x60 .config || (echo "❌ 设备不是X60" && exit 1)
+
+    - name: 修改默认IP + 中文
       run: |
-        [ -f scripts/diy.sh ] && chmod +x scripts/diy.sh && (cd openwrt && ../scripts/diy.sh) || echo "跳过 diy.sh"
+        cd openwrt
 
-    - name: 下载源码包
+        sed -i 's/192.168.1.1/192.168.2.1/g' package/base-files/files/bin/config_generate || true
+        sed -i 's/option lang .*/option lang zh_cn/' package/base-files/files/etc/config/luci || true
+
+    - name: 下载依赖
       run: |
         cd openwrt
         make download -j8
 
-    - name: 编译（防炸版）
+    - name: 编译（稳定）
       run: |
         cd openwrt
         export GOMAXPROCS=2
-
         make -j$(nproc) || make -j2 || make -j1 V=s || (echo "❌ 编译失败" && exit 1)
 
-    - name: 查找固件（已修复）
+    - name: 整理固件
       run: |
+        mkdir -p output
+
         echo "===== 固件列表 ====="
-        find openwrt/bin/targets -type f || (echo "❌ 没有生成固件" && exit 1)
+        find openwrt/bin/targets -type f
 
-        echo "===== 查找bin ====="
-        BIN=$(find openwrt/bin/targets -name "*.bin" | head -n 1)
+        SYS=$(find openwrt/bin/targets -name "*sysupgrade*.bin" | head -n 1)
+        FAC=$(find openwrt/bin/targets -name "*factory*.bin" | head -n 1)
 
-        if [ -z "$BIN" ]; then
-          echo "❌ 没找到固件文件"
-          exit 1
+        if [ -n "$SYS" ]; then
+          cp $SYS output/X60-sysupgrade.bin
+          echo "✅ sysupgrade OK"
         fi
 
-        echo "✅ 找到固件: $BIN"
+        if [ -n "$FAC" ]; then
+          cp $FAC output/X60-factory.bin
+          echo "✅ factory OK"
+        fi
 
-    - name: 上传固件（最终）
+        ls output || (echo "❌ 没生成固件" && exit 1)
+
+    - name: 上传固件
       uses: actions/upload-artifact@v4
       with:
         name: X60-FIRMWARE
-        path: openwrt/bin/targets/
+        path: output/

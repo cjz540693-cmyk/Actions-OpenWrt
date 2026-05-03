@@ -17,7 +17,7 @@ on:
 env:
   # 核心配置
   REPO_URL: "https://github.com/cjz540693-cmyk/immortalwrt-mt798x-6.6-padavanonly"  # 源码仓库
-  REPO_BRANCH: "openwrt-23.05"  # 分支
+  REPO_BRANCH: "openwrt-24.10"  # 分支
   FEEDS_CONF: "feeds.conf.default"  # feeds 配置文件
   
   # 设备特定配置

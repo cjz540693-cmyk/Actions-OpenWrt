@@ -11,8 +11,8 @@ on:
         default: 'v1.0.0'
 
 env:
-  REPO_URL: "https://github.com/immortalwrt/immortalwrt"
-  REPO_BRANCH: "openwrt-23.05"
+  REPO_URL: "https://github.com/cjz540693-cmyk/immortalwrt-mt798x-6.6-padavanonly"
+  REPO_BRANCH: "openwrt-24.10"
   TARGET: "mediatek"
   SUBTARGET: "filogic"
   DEVICE_NAME: "ruijie_x60"

@@ -12,7 +12,7 @@ on:
 
 env:
   REPO_URL: "https://github.com/cjz540693-cmyk/immortalwrt-mt798x-6.6-padavanonly"
-  REPO_BRANCH: "openwrt-24.10"
+  REPO_BRANCH: "openwrt-24.10-6.6"
   TARGET: "mediatek"
   SUBTARGET: "filogic"
   DEVICE_NAME: "ruijie_x60"

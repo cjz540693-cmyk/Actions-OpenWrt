@@ -6,7 +6,7 @@ on:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
-  workflow_dispatch:   允许手动触发
+  workflow_dispatch:   # 允许手动触发
     inputs:
       version:
         description: '固件版本号 (例如: v1.0.0)'

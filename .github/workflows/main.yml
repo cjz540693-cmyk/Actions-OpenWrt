@@ -1,55 +1,44 @@
-name: Build OpenWrt X60
+name: Build X60 Firmware
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build X60 Firmware
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Shanghai
 
     steps:
-      # 1️⃣ Checkout 仓库
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2️⃣ 缓存 feeds 和下载文件
-      - name: Cache feeds and downloads
-        uses: actions/cache@v3
-        with:
-          path: |
-            feeds
-            dl
-          key: ${{ runner.os }}-openwrt-cache
-
-      # 3️⃣ 安装依赖（去掉 distutils）
-      - name: Install dependencies
+      - name: Setup build dependencies
         run: |
           sudo apt update
           sudo apt install -y build-essential libncurses5-dev gawk gettext unzip file git \
-          python3 python3-pip python3-setuptools rsync zlib1g-dev wget curl
+            python3 python3-pip python3-setuptools rsync zlib1g-dev wget curl
 
-      # 4️⃣ 更新 feeds
-      - name: Update and install feeds
+      - name: Show directory structure
+        run: |
+          echo "--- Listing root files ---"
+          ls -R .
+
+      - name: Update feeds
         run: |
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      # 5️⃣ 配置 X60 默认机型
-      - name: Configure X60 target
+      - name: Apply X60 config (MT7986)
         run: |
-          cp configs/x60_defconfig .config
+          cp -f defconfig/mt7986-ax6000.config .config
           make defconfig
 
-      # 6️⃣ 编译固件
       - name: Build firmware
         run: |
           make -j$(nproc) V=s
 
-      # 7️⃣ 上传固件产物
-      - name: Upload firmware
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: X60-firmware

@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ 设置缓存（加速编译）
+      # 2️⃣ 缓存 feeds 和下载文件
       - name: Cache feeds and downloads
         uses: actions/cache@v3
         with:
@@ -24,11 +24,12 @@ jobs:
             dl
           key: ${{ runner.os }}-openwrt-cache
 
-      # 3️⃣ 安装依赖
+      # 3️⃣ 安装依赖（去掉 distutils）
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential libncurses5-dev gawk gettext unzip file git python3 python3-distutils
+          sudo apt install -y build-essential libncurses5-dev gawk gettext unzip file git \
+          python3 python3-pip python3-setuptools rsync zlib1g-dev wget curl
 
       # 4️⃣ 更新 feeds
       - name: Update and install feeds
@@ -47,7 +48,7 @@ jobs:
         run: |
           make -j$(nproc) V=s
 
-      # 7️⃣ 上传编译产物
+      # 7️⃣ 上传固件产物
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
